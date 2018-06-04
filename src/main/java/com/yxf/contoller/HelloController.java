@@ -123,6 +123,13 @@ public class HelloController {
         resObj.put("data",data);
         return resObj;
     }
+
+    /**
+     *
+     * @param request
+     * @param response
+     * @return
+     */
     @PostMapping("/look.do")
     public String look(HttpServletRequest request, HttpServletResponse response) {
         String logistics_interface = request.getParameter("logistics_interface");
