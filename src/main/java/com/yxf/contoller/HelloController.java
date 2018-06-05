@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
+@CrossOrigin
 public class HelloController {
 
     private static final String key = "c7LHz5oPS/oEoX+TkYHsKA==";
