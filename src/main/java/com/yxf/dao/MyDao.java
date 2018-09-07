@@ -1,12 +1,13 @@
 package com.yxf.dao;
 
-import com.yxf.pojo.CainiaoRes1;
-import com.yxf.pojo.CainiaoRes2;
-import com.yxf.pojo.CainiaoResDetail;
+import com.alibaba.fastjson.JSONObject;
+import com.yxf.pojo.Timeline;
 import com.yxf.pojo.User;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -18,37 +19,36 @@ public class MyDao {
     @Resource
     private MongoTemplate mongoTemplate;
 
-    public void save(User user) {
-        mongoTemplate.save(user);
+
+    public void saveTimeline(Timeline timeline) {
+        mongoTemplate.save(timeline);
     }
-    public void saveCainiaoRes1(CainiaoRes1 cn1) {
-        mongoTemplate.save(cn1);
+
+    public List<Timeline> findAllTimeline() {
+        Query query = new Query();
+        query.with(new Sort(Sort.Direction.DESC,"time"));
+        return mongoTemplate.find(query,Timeline.class);
     }
-    public void saveCainiaoRes2(CainiaoRes2 cn2) {
-        mongoTemplate.save(cn2);
+    public List<Timeline> findTimelineByName(String name) {
+        Query query = new Query(Criteria.where("author").is(name));
+        query.with(new Sort(Sort.Direction.DESC,"time"));
+        return mongoTemplate.find(query,Timeline.class);
     }
-    public void saveCainiaoDetail(CainiaoResDetail cn2) {
-        mongoTemplate.save(cn2);
-    }
-    public List<CainiaoRes1> findCainiaoRes1(String date) {
-        Query query = new Query(Criteria.where("date").is(date));
-        return mongoTemplate.find(query, CainiaoRes1.class);
-    }
-    public List<CainiaoRes2> findCainiaoRes2(String date,String agentId) {
-        Query query = new Query(Criteria.where("date").is(date).and("userId").is(agentId));
-        return mongoTemplate.find(query, CainiaoRes2.class);
+    public List<User> findUser(User user) {
+        Query query = new Query(Criteria.where("name").is(user.getName()).and("passwd").is(user.getPasswd()));
+        return mongoTemplate.find(query, User.class);
     }
 
     public List<User> find(String name) {
         Query query = new Query(Criteria.where("name").is(name));
-        return mongoTemplate.find(query, User.class);
+        //return mongoTemplate.find(query, User.class);
+        return mongoTemplate.findAll(User.class);
     }
 
     public List<User> find(String name, String passwd) {
         Query query = new Query(Criteria.where("name").is(name).and("passwd").is(passwd));
         return mongoTemplate.find(query, User.class);
     }
-    public List<CainiaoResDetail> findDetail() {
-        return mongoTemplate.findAll(CainiaoResDetail.class);
-    }
+
+
 }

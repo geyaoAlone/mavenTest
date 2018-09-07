@@ -16,7 +16,7 @@ public class Timeline {
     private String time;
     private String title;
     private String content;
-    private String auhtor;
+    private String author;
 
     public String validate(){
         if(title == null){
