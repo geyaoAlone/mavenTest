@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.yxf.dao.MyDao;
 import com.yxf.dao.RedisDao;
+import com.yxf.pojo.Blogs;
 import com.yxf.pojo.Timeline;
 import com.yxf.pojo.User;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,49 +29,19 @@ public class HelloController {
         List<User> users = Optional.ofNullable(myDao.find(name, passwd)).orElse(Collections.singletonList(new User()));
         return users.size() > 0 ? users.get(0) : null;
     }*/
-    @PostMapping("/findAllTimeline.do")
-    public JSONObject findAllTimeline(@RequestBody JSONObject object) {
-        String usename = object.getString("usename");
-        JSONObject res = new JSONObject();
-        if(usename == null){
-            res.put("dataList",myDao.findAllTimeline());
-            return res;
-        }
-        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
-        if(user == null || !usename.equals(user.getUsename())){
-            return null;
-        }
-        res.put("dataList",myDao.findTimelineByName(usename));
-        res.put("checkData",user.getPasswd());
-        return res;
-    }
-    @PostMapping("/saveTimeline.do")
-    public String saveTimeline(@RequestBody JSONObject object,HttpServletRequest request) {
-        String usename = object.getString("usename");
-        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
-        if(user == null || !usename.equals(user.getUsename())){
-            return "抱歉，无权插入";
-        }
-        object.put("time",getNowTime());
-        object.put("author",user.getUsename());
-        Timeline tl = JSON.parseObject(JSON.toJSONString(object),Timeline.class);
-        if(!"1".equals(tl.validate())){
-            return tl.validate();
-        }
-        myDao.saveTimeline(tl);
-        return "保存成功";
-    }
 
+
+   /***登陆退出****/
    @PostMapping("/checkLogin.do")
-    public String find(@RequestBody JSONObject object,HttpServletRequest request) {
-        User user = JSON.parseObject(JSON.toJSONString(object),User.class);
-        List<User> users = Optional.ofNullable(myDao.findUser(user)).orElse(Collections.singletonList(new User()));
-        String res = users.size() == 1 ? "1" : "0";
-        if(res.equals("1")){
-             redisDao.set(user.getUsename(),JSON.toJSONString(users.get(0)),1800);
-        }
+   public String find(@RequestBody JSONObject object,HttpServletRequest request) {
+       User user = JSON.parseObject(JSON.toJSONString(object),User.class);
+       List<User> users = Optional.ofNullable(myDao.findUser(user)).orElse(Collections.singletonList(new User()));
+       String res = users.size() == 1 ? "1" : "0";
+       if(res.equals("1")){
+           redisDao.set(user.getUsename(),JSON.toJSONString(users.get(0)),1800);
+       }
        return res;
-    }
+   }
 
     @PostMapping("/loginOut.do")
     public String loginOut(@RequestBody JSONObject object) {
@@ -78,10 +49,70 @@ public class HelloController {
         redisDao.del(usename);
         return "1";
     }
-    @GetMapping("/queryJSONObject.do")
-    public List<JSONObject> queryJSONObject(){
-        return myDao.queryJSONObject();
+
+
+    /***博客***/
+
+    @PostMapping("/findAllTimeline.do")
+    public List<Timeline> findAllTimeline(@RequestBody JSONObject object) {
+        return myDao.findAllTimeline();
     }
+    @PostMapping("/saveTimeline.do")
+    public String saveTimeline(@RequestBody JSONObject object,HttpServletRequest request) {
+        String usename = object.getString("usename");
+        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
+        if(user == null || !usename.equals(user.getUsename()) || !"0".equals(user.getUsetype())){
+            return "抱歉，无权插入";
+        }
+        object.put("time",getNowTime());
+        object.put("author",user.getUsename());
+        Timeline timeline = JSON.parseObject(JSON.toJSONString(object),Timeline.class);
+        if(!"1".equals(timeline.validate())){
+            return timeline.validate();
+        }
+        myDao.saveTimeline(timeline);
+        return "保存成功";
+    }
+
+    /***时间线***/
+    @PostMapping("/findAllBlogs.do")
+    public JSONObject findAllBlogs(@RequestBody JSONObject object) {
+        String usename = object.getString("usename");
+        JSONObject res = new JSONObject();
+        if(usename == null){
+            res.put("dataList",myDao.findAllBlogs());
+            return res;
+        }
+        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
+        if(user == null || !usename.equals(user.getUsename())){
+            return null;
+        }
+        res.put("dataList",myDao.findBlogsByAuthor(usename));
+        res.put("checkData",user.getPasswd());
+        return res;
+    }
+    @PostMapping("/saveBlogs.do")
+    public String saveBlogs(@RequestBody JSONObject object,HttpServletRequest request) {
+        String usename = object.getString("usename");
+        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
+        if(user == null || !usename.equals(user.getUsename())){
+            return "抱歉，无权插入";
+        }
+        object.put("time",getNowTime());
+        object.put("author",user.getUsename());
+        Blogs blogs = JSON.parseObject(JSON.toJSONString(object),Blogs.class);
+        if(!"1".equals(blogs.validate())){
+            return blogs.validate();
+        }
+        myDao.saveBlogs(blogs);
+        return "保存成功";
+    }
+
+
+
+
+
+
     /*
     @PostMapping("/save.do")
     public String saveObj(@RequestBody CainiaoRes2 object, HttpServletRequest request, HttpServletResponse response) {
