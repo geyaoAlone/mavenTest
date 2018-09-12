@@ -19,6 +19,12 @@ public class MyDao {
     @Resource
     private MongoTemplate mongoTemplate;
 
+    public List<JSONObject> queryJSONObject(){
+        return mongoTemplate.find(new Query(),JSONObject.class,"timeline");
+    }
+    public void save(JSONObject object){
+        mongoTemplate.save(object,"timeline");
+    }
 
     public void saveTimeline(Timeline timeline) {
         mongoTemplate.save(timeline);

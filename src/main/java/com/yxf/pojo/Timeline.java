@@ -13,6 +13,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 public class Timeline {
 
+
     private String time;
     private String title;
     private String content;
