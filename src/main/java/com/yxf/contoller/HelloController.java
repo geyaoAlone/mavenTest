@@ -30,29 +30,29 @@ public class HelloController {
     }*/
     @PostMapping("/findAllTimeline.do")
     public JSONObject findAllTimeline(@RequestBody JSONObject object) {
-        String name = object.getString("name");
+        String usename = object.getString("usename");
         JSONObject res = new JSONObject();
-        if(name == null){
+        if(usename == null){
             res.put("dataList",myDao.findAllTimeline());
             return res;
         }
-        User user = JSON.parseObject((String) redisDao.get(name),User.class);
-        if(user == null || !name.equals(user.getName())){
+        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
+        if(user == null || !usename.equals(user.getUsename())){
             return null;
         }
-        res.put("dataList",myDao.findTimelineByName(name));
+        res.put("dataList",myDao.findTimelineByName(usename));
         res.put("checkData",user.getPasswd());
         return res;
     }
     @PostMapping("/saveTimeline.do")
     public String saveTimeline(@RequestBody JSONObject object,HttpServletRequest request) {
-        String name = object.getString("name");
-        User user = JSON.parseObject((String) redisDao.get(name),User.class);
-        if(user == null || !name.equals(user.getName())){
+        String usename = object.getString("usename");
+        User user = JSON.parseObject((String) redisDao.get(usename),User.class);
+        if(user == null || !usename.equals(user.getUsename())){
             return "抱歉，无权插入";
         }
         object.put("time",getNowTime());
-        object.put("author",user.getName());
+        object.put("author",user.getUsename());
         Timeline tl = JSON.parseObject(JSON.toJSONString(object),Timeline.class);
         if(!"1".equals(tl.validate())){
             return tl.validate();
@@ -67,15 +67,15 @@ public class HelloController {
         List<User> users = Optional.ofNullable(myDao.findUser(user)).orElse(Collections.singletonList(new User()));
         String res = users.size() == 1 ? "1" : "0";
         if(res.equals("1")){
-             redisDao.set(user.getName(),JSON.toJSONString(users.get(0)),1800);
+             redisDao.set(user.getUsename(),JSON.toJSONString(users.get(0)),1800);
         }
        return res;
     }
 
     @PostMapping("/loginOut.do")
     public String loginOut(@RequestBody JSONObject object) {
-        String name = object.getString("name");
-        redisDao.del(name);
+        String usename = object.getString("usename");
+        redisDao.del(usename);
         return "1";
     }
     @GetMapping("/queryJSONObject.do")
