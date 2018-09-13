@@ -29,16 +29,28 @@ public class HelloController {
         List<User> users = Optional.ofNullable(myDao.find(name, passwd)).orElse(Collections.singletonList(new User()));
         return users.size() > 0 ? users.get(0) : null;
     }*/
-
-
+    @PostMapping("/commonSave.do")
+    public String commonSave(@RequestBody JSONObject object){
+        String collectionName = object.getString("collectionName");
+        if(collectionName == null){
+            return "失败";
+        }
+        object.remove("collectionName",collectionName);
+        myDao.save(object,collectionName);
+        return "成功";
+    }
    /***登陆退出****/
    @PostMapping("/checkLogin.do")
    public String find(@RequestBody JSONObject object,HttpServletRequest request) {
-       User user = JSON.parseObject(JSON.toJSONString(object),User.class);
-       List<User> users = Optional.ofNullable(myDao.findUser(user)).orElse(Collections.singletonList(new User()));
+       String usename = object.getString("usename");
+       String passwd = object.getString("passwd");
+       if(usename == null || passwd == null){
+           return "0";
+       }
+       List<User> users = myDao.find(usename,passwd);
        String res = users.size() == 1 ? "1" : "0";
        if(res.equals("1")){
-           redisDao.set(user.getUsename(),JSON.toJSONString(users.get(0)),1800);
+           redisDao.set(users.get(0).getUsename(),JSON.toJSONString(users.get(0)),1800);
        }
        return res;
    }
@@ -51,8 +63,8 @@ public class HelloController {
     }
 
 
-    /***博客***/
 
+    /***时间线***/
     @PostMapping("/findAllTimeline.do")
     public List<Timeline> findAllTimeline(@RequestBody JSONObject object) {
         return myDao.findAllTimeline();
@@ -74,7 +86,7 @@ public class HelloController {
         return "保存成功";
     }
 
-    /***时间线***/
+    /***博客***/
     @PostMapping("/findAllBlogs.do")
     public JSONObject findAllBlogs(@RequestBody JSONObject object) {
         String usename = object.getString("usename");
@@ -88,8 +100,17 @@ public class HelloController {
             return null;
         }
         res.put("dataList",myDao.findBlogsByAuthor(usename));
-        res.put("checkData",user.getPasswd());
+        res.put("user",user);
         return res;
+    }
+
+    @PostMapping("/findBlogsById.do")
+    public Blogs findBlogsById(@RequestBody JSONObject object) {
+        String blogid = object.getString("blogid");
+        if(blogid == null){
+            return null;
+        }
+        return myDao.findBlogsById(blogid);
     }
     @PostMapping("/saveBlogs.do")
     public String saveBlogs(@RequestBody JSONObject object,HttpServletRequest request) {
@@ -100,6 +121,9 @@ public class HelloController {
         }
         object.put("time",getNowTime());
         object.put("author",user.getUsename());
+        object.put("blogid",getMajorKeyId("bg"));
+        object.put("blogtype","1");
+        object.put("ispublic",true);
         Blogs blogs = JSON.parseObject(JSON.toJSONString(object),Blogs.class);
         if(!"1".equals(blogs.validate())){
             return blogs.validate();

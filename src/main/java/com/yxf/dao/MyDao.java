@@ -30,9 +30,12 @@ public class MyDao {
 
     /***博客查询***/
     public List<Blogs> findAllBlogs() {
-        Query query = new Query();
+        Query query = new Query(Criteria.where("ispublic").is(true));
         query.with(new Sort(Sort.Direction.DESC,"time"));
         return mongoTemplate.find(query,Blogs.class);
+    }
+    public Blogs findBlogsById(String blogid) {
+        return mongoTemplate.find(new Query(Criteria.where("blogid").is(blogid)),Blogs.class).get(0);
     }
     public List<Blogs> findBlogsByAuthor(String author) {
         Query query = new Query(Criteria.where("author").is(author));
