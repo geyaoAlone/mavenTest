@@ -21,6 +21,10 @@ public class Blogs {
     private String content;
     private String author;//存客户usename
 
+    private int support;//点赞
+    private int viewCount;//查看次数
+
+
     public String validate(){
         if(title == null){
             return "标题不能为空";

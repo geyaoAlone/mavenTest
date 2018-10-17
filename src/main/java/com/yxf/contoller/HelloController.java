@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.yxf.dao.MyDao;
 import com.yxf.dao.RedisDao;
 import com.yxf.pojo.Blogs;
+import com.yxf.pojo.Comments;
 import com.yxf.pojo.Timeline;
 import com.yxf.pojo.User;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -47,7 +48,7 @@ public class HelloController {
        if(usename == null || passwd == null){
            return "0";
        }
-       List<User> users = myDao.find(usename,passwd);
+       List<User> users = myDao.findUser(usename,passwd);
        String res = users.size() == 1 ? "1" : "0";
        if(res.equals("1")){
            redisDao.set(users.get(0).getUsename(),JSON.toJSONString(users.get(0)),1800);
@@ -66,8 +67,15 @@ public class HelloController {
 
     /***时间线***/
     @PostMapping("/findAllTimeline.do")
-    public List<Timeline> findAllTimeline(@RequestBody JSONObject object) {
-        return myDao.findAllTimeline();
+    public JSONObject findAllTimeline(@RequestBody JSONObject object) {
+        String usename = object.getString("usename");
+        JSONObject res = new JSONObject();
+        res.put("dataList",myDao.findAllTimeline());
+        if(usename == null){
+            return res;
+        }
+        res.put("user",JSON.parseObject((String) redisDao.get(usename),User.class));
+        return res;
     }
     @PostMapping("/saveTimeline.do")
     public String saveTimeline(@RequestBody JSONObject object,HttpServletRequest request) {
@@ -99,18 +107,37 @@ public class HelloController {
         if(user == null || !usename.equals(user.getUsename())){
             return null;
         }
-        res.put("dataList",myDao.findBlogsByAuthor(usename));
+        List<Blogs> list = myDao.findBlogsByAuthor(usename);
+        for (Blogs blogs :list) {
+            blogs.setAuthor(myDao.findUser(blogs.getAuthor()).get(0).getNickname());
+        }
+        res.put("dataList",list);
         res.put("user",user);
         return res;
     }
 
     @PostMapping("/findBlogsById.do")
-    public Blogs findBlogsById(@RequestBody JSONObject object) {
+    public JSONObject findBlogsById(@RequestBody JSONObject object) {
         String blogid = object.getString("blogid");
+        String usename = object.getString("usename");
+        JSONObject res = new JSONObject();
         if(blogid == null){
             return null;
         }
-        return myDao.findBlogsById(blogid);
+        if(usename != null){
+            User user = JSON.parseObject((String) redisDao.get(usename),User.class);
+            if(user == null || !usename.equals(user.getUsename())){
+                return null;
+            }
+            res.put("user",user);
+        }
+        res.put("blog",myDao.findBlogsById(blogid));
+
+        JSONObject blogId = new JSONObject();
+        blogId.put("blogid",blogid);
+        res.put("comments",myDao.findComments(blogId));
+
+        return res;
     }
     @PostMapping("/saveBlogs.do")
     public String saveBlogs(@RequestBody JSONObject object,HttpServletRequest request) {
@@ -131,6 +158,54 @@ public class HelloController {
         myDao.saveBlogs(blogs);
         return "保存成功";
     }
+
+    @PostMapping("/updateBlogSupport.do")
+    public String updateBlogSupport(@RequestBody JSONObject object) {
+        String blogid = object.getString("blogid");
+        Blogs b = myDao.findBlogsById(blogid);
+        if(b != null ){
+            myDao.updateBlogSupport(blogid,(b.getSupport()+1));
+        }
+        return "1";
+
+    }
+
+    @PostMapping("/updateBlogViewCount.do")
+    public String updateBlogViewCount(@RequestBody JSONObject object) {
+        String blogid = object.getString("blogid");
+        Blogs b = myDao.findBlogsById(blogid);
+        if(b != null ){
+            myDao.updateBlogViewCount(blogid,(b.getViewCount()+1));
+        }
+        return "1";
+
+    }
+
+
+    /***留言处理***/
+
+    @PostMapping("/saveComments.do")
+    public String saveComments(@RequestBody JSONObject object){
+        Comments comments = JSON.parseObject(JSON.toJSONString(object),Comments.class);
+        comments.setCommentid(getMajorKeyId("ly"));
+        comments.setTime(getNowTime());
+        myDao.saveComments(comments);
+        return "1";
+    }
+
+
+    @PostMapping("/queryComments.do")
+    public List<Comments> queryComments(@RequestBody JSONObject object){
+        return myDao.findComments(object);
+    }
+
+
+
+
+
+
+
+
 
 
 

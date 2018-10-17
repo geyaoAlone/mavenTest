@@ -2,17 +2,20 @@ package com.yxf.dao;
 
 import com.alibaba.fastjson.JSONObject;
 import com.yxf.pojo.Blogs;
+import com.yxf.pojo.Comments;
 import com.yxf.pojo.Timeline;
 import com.yxf.pojo.User;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Repository
 public class MyDao {
@@ -46,7 +49,27 @@ public class MyDao {
         mongoTemplate.save(Blogs);
     }
 
+    public void updateBlogSupport(String blogid,int support){
+        mongoTemplate.updateFirst(new Query(Criteria.where("blogid").is(blogid)),Update.update("support",support),Blogs.class);
+    }
 
+    public void updateBlogViewCount(String blogid,int viewCount){
+        mongoTemplate.updateFirst(new Query(Criteria.where("blogid").is(blogid)),Update.update("viewCount",viewCount),Blogs.class);
+    }
+    /***留言处理***/
+    public void saveComments(Comments comment){
+        mongoTemplate.save(comment);
+    }
+
+    public List<Comments> findComments(JSONObject object) {
+        Query query = new Query();
+        query.with(new Sort(Sort.Direction.DESC,"time"));
+        Set<Map.Entry<String,Object>> s = object.entrySet();
+        for (Map.Entry<String, Object> entry : s) {
+            query.addCriteria(Criteria.where(entry.getKey()).is(entry.getValue()));
+        }
+        return mongoTemplate.find(query,Comments.class);
+    }
 
     /***时间线***/
     public void saveTimeline(Timeline timeline) {
@@ -68,11 +91,11 @@ public class MyDao {
         Query query = new Query(Criteria.where("useid").is(useid));
         return mongoTemplate.find(query, User.class);
     }
-    public List<User> find(String usename) {
+    public List<User> findUser(String usename) {
         Query query = new Query(Criteria.where("usename").is(usename));
         return mongoTemplate.findAll(User.class);
     }
-    public List<User> find(String usename, String passwd) {
+    public List<User> findUser(String usename, String passwd) {
         Query query = new Query(Criteria.where("usename").is(usename).and("passwd").is(passwd));
         return mongoTemplate.find(query, User.class);
     }
